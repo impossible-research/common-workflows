@@ -1,0 +1,29 @@
+---
+name: 👷 Terraform Plan
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    inputs:
+      tf_path:
+        default: .
+        description: path to terraform directory
+        required: false
+        type: string
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - name: Run `terraform init`
+        run: terraform -chdir=${{ inputs.tf_path }} init -input=false
+      - name: Run `terraform plan`
+        run: terraform -chdir=${{ inputs.tf_path }} plan -input=false
