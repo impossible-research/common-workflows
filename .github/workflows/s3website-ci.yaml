@@ -1,0 +1,20 @@
+---
+name: 👷 Continuous Integration
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+jobs:
+  lint:
+    uses: impossible-research/common-workflows/.github/workflows/lint.yaml@master
+
+  plan:
+    if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-static-site-template' && github.event.head_commit.message != 'Initial commit' }}
+    uses: impossible-research/common-workflows/.github/workflows/plan.yaml@master
+    with:
+      tf_path: infra
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
