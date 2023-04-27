@@ -1,0 +1,47 @@
+---
+name: 👷 Continuous Integration
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+jobs:
+  lint:
+    uses: impossible-research/common-workflows/.github/workflows/lint.yaml@master
+
+  build:
+    if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-hugo-site-template' && github.event.head_commit.message != 'Initial commit' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: chetan/git-restore-mtime-action@v1
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Install `hugo`
+        run: |
+          HUGO_VERSION=0.110.0
+          wget https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz
+          tar zxf hugo_${HUGO_VERSION}_linux-amd64.tar.gz hugo
+
+      - name: Build site
+        run: PATH=.:$PATH make build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: public_html
+          path: public/
+
+  plan:
+    if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-hugo-site-template' && github.event.head_commit.message != 'Initial commit' }}
+    uses: impossible-research/common-workflows/.github/workflows/plan.yaml@master
+    with:
+      tf_path: infra
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

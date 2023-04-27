@@ -1,0 +1,90 @@
+---
+name: 🚀 Continuous Deployment
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    secrets:
+      CLOUDFLARE_TOKEN:
+        required: true
+      TF_API_TOKEN:
+        required: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/hugo-ci.yaml
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+
+  deploy:
+    if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-hugo-site-template' && github.event.head_commit.message != 'Initial commit' }}
+    needs:
+      - ci
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: true
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: chetan/git-restore-mtime-action@v1
+      - uses: actions/download-artifact@v3
+        with:
+          name: public_html
+          path: public/
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Install `hugo`
+        run: |
+          HUGO_VERSION=0.110.0
+          wget https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz
+          tar zxf hugo_${HUGO_VERSION}_linux-amd64.tar.gz hugo
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_wrapper: false
+      - name: Run `terraform init`
+        run: terraform -chdir=infra init -input=false
+      - name: Run `terraform apply`
+        run: terraform -chdir=infra apply -input=false -auto-approve
+
+      - name: Setup Environment
+        run: |
+          echo AWS_S3_BUCKET_NAME="$(terraform -chdir=infra output -raw aws_s3_bucket_name)" >> $GITHUB_ENV
+          echo AWS_S3_REGION="$(terraform -chdir=infra output -raw aws_region)" >> $GITHUB_ENV
+          echo CLOUDFLARE_ZONE_ID="$(terraform -chdir=infra output -raw cloudflare_zone_id)" >> $GITHUB_ENV
+
+      - name: Configure Hugo
+        run: |
+          yq -i '.targets[0].name = "production"' config/production/deployment.yaml
+          yq -i '.targets[0].URL = "s3://${{ env.AWS_S3_BUCKET_NAME }}?region=${{ env.AWS_S3_REGION }}"' config/production/deployment.yaml
+
+      - name: Generate AWS Credentials
+        id: aws_creds
+        run: |
+          AWS_REGION="$(terraform -chdir=infra output -raw aws_region)"
+          AWS_ACCESS_KEY_ID="$(terraform -chdir=infra output -raw github_ci_aws_access_key_id)"
+          AWS_SECRET_ACCESS_KEY="$(terraform -chdir=infra output -raw github_ci_aws_secret_access_key)"
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
+          echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> $GITHUB_OUTPUT
+          echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_OUTPUT
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ steps.aws_creds.outputs.aws_region }}
+          aws-access-key-id: ${{ steps.aws_creds.outputs.aws_access_key_id }}
+          aws-secret-access-key: ${{ steps.aws_creds.outputs.aws_secret_access_key }}
+
+      - name: Sync S3 Bucket
+        run: PATH=.:$PATH make deploy
+
+      - name: Purge Cloudflare Cache
+        run: |
+          curl -sSf -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
