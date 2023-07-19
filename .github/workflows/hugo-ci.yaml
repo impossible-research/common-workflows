@@ -1,7 +1,8 @@
 ---
 name: 👷 Continuous Integration
 
-on:  # yamllint disable-line rule:truthy
+on:
+  # yamllint disable-line rule:truthy
   workflow_call:
     secrets:
       TF_API_TOKEN:
@@ -27,7 +28,7 @@ jobs:
         run: npm ci
       - name: Install `hugo`
         run: |
-          HUGO_VERSION=0.110.0
+          HUGO_VERSION=0.115.3
           wget https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz
           tar zxf hugo_${HUGO_VERSION}_linux-amd64.tar.gz hugo
 
