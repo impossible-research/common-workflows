@@ -4,6 +4,11 @@ name: 👷 Continuous Integration
 on:
   # yamllint disable-line rule:truthy
   workflow_call:
+    inputs:
+      HUGO_VERSION:
+        default: latest
+        required: false
+        type: string
     secrets:
       TF_API_TOKEN:
         required: true
@@ -27,11 +32,17 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
       - name: Install `hugo`
-        run: |
-          HUGO_VERSION=0.116.1
-          wget https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-amd64.tar.gz
-          tar zxf hugo_${HUGO_VERSION}_linux-amd64.tar.gz hugo
-
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: ${{ inputs.HUGO_VERSION }}
+          extended: true
+      - name: Cache hugo modules
+        uses: actions/cache@v3
+        with:
+          path: /tmp/hugo_cache
+          key: ${{ runner.os }}-hugomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-hugomod-
       - name: Build site
         run: PATH=.:$PATH make build
       - uses: actions/upload-artifact@v3
