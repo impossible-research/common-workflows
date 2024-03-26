@@ -31,33 +31,29 @@ jobs:
     env:
       TF_IN_AUTOMATION: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: chetan/git-restore-mtime-action@v1
-      - uses: actions/download-artifact@v3
+      - uses: chetan/git-restore-mtime-action@v2
+      - uses: actions/download-artifact@v4
         with:
           name: public_html
           path: public/
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
-      - name: Install npm dependencies
-        run: npm ci
-      - name: Install `hugo`
-        uses: peaceiris/actions-hugo@v2
+      - run: npm ci
+      - uses: peaceiris/actions-hugo@v2
         with:
           hugo-version: ${{ inputs.HUGO_VERSION }}
           extended: true
-      - uses: hashicorp/setup-terraform@v2
+      - uses: hashicorp/setup-terraform@v3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_wrapper: false
-      - name: Run `terraform init`
-        run: terraform -chdir=infra init -input=false
-      - name: Run `terraform apply`
-        run: terraform -chdir=infra apply -input=false -auto-approve
+      - run: terraform -chdir=infra init -input=false
+      - run: terraform -chdir=infra apply -input=false -auto-approve
 
       - name: Setup Environment
         run: |
@@ -81,7 +77,7 @@ jobs:
           echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
           echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> $GITHUB_OUTPUT
           echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_OUTPUT
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ steps.aws_creds.outputs.aws_region }}
           aws-access-key-id: ${{ steps.aws_creds.outputs.aws_access_key_id }}

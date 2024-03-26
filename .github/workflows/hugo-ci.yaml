@@ -21,31 +21,27 @@ jobs:
     if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-hugo-site-template' && github.event.head_commit.message != 'Initial commit' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: chetan/git-restore-mtime-action@v1
-      - uses: actions/setup-node@v3
+      - uses: chetan/git-restore-mtime-action@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
-      - name: Install npm dependencies
-        run: npm ci
-      - name: Install `hugo`
-        uses: peaceiris/actions-hugo@v2
+      - run: npm ci
+      - uses: peaceiris/actions-hugo@v2
         with:
           hugo-version: ${{ inputs.HUGO_VERSION }}
           extended: true
-      - name: Cache hugo modules
-        uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: /tmp/hugo_cache
           key: ${{ runner.os }}-hugomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-hugomod-
-      - name: Build site
-        run: PATH=.:$PATH make build
-      - uses: actions/upload-artifact@v3
+      - run: PATH=.:$PATH make build
+      - uses: actions/upload-artifact@v4
         with:
           name: public_html
           path: public/
