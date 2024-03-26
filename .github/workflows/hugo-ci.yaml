@@ -40,6 +40,11 @@ jobs:
           key: ${{ runner.os }}-hugomod-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-hugomod-
+      - uses: actions/cache@v4
+        with:
+          path: .jampack
+          key: jampack-${{ github.sha }}
+          restore-keys: jampack
       - run: PATH=.:$PATH make build
       - uses: actions/upload-artifact@v4
         with:
