@@ -48,12 +48,12 @@ jobs:
         with:
           hugo-version: ${{ inputs.HUGO_VERSION }}
           extended: true
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_wrapper: false
-      - run: terraform -chdir=infra init -input=false
-      - run: terraform -chdir=infra apply -input=false -auto-approve
+      # - uses: hashicorp/setup-terraform@v3
+      #   with:
+      #     cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      #     terraform_wrapper: false
+      # - run: terraform -chdir=infra init -input=false
+      # - run: terraform -chdir=infra apply -input=false -auto-approve
 
       - name: Setup Environment
         run: |
