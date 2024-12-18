@@ -44,10 +44,11 @@ jobs:
           node-version: 18
           cache: npm
       - run: npm ci
-      - uses: peaceiris/actions-hugo@v2
+      - uses: peaceiris/actions-hugo@153e0fe512e5ed7793f9cc407584103ed340816f
         with:
           hugo-version: ${{ inputs.HUGO_VERSION }}
           extended: true
+          withdeploy: true
       - uses: hashicorp/setup-terraform@v3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
