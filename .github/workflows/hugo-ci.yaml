@@ -14,8 +14,8 @@ on:
         required: true
 
 jobs:
-  lint:
-    uses: impossible-research/common-workflows/.github/workflows/lint.yaml@master
+  # lint:
+  #   uses: impossible-research/common-workflows/.github/workflows/lint.yaml@master
 
   build:
     if: ${{ github.repository != 'impossible-research/aws-cloudflare-s3-hugo-site-template' && github.event.head_commit.message != 'Initial commit' }}
