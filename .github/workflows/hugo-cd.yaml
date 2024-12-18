@@ -46,7 +46,7 @@ jobs:
       - run: npm ci
       - uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: v0.136.5 # GHA doesn't support withdeploy, so use the last version without the change
+          hugo-version: '0.136.5' # GHA doesn't support withdeploy, so use the last version without the change
           extended: true
       - uses: hashicorp/setup-terraform@v3
         with:
